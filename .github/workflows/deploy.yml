@@ -1,0 +1,56 @@
+name: Deploy
+
+# 手动触发工作流
+on:
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Set up JDK
+        uses: actions/setup-java@v2
+        with:
+          distribution: 'adopt'
+          java-version: '17'  # 根据项目需要选择 Java 版本
+
+      - name: Build with Maven
+        run: mvn clean install
+
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.5.3
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Deploy to Server
+        env:
+          HOST: 81.70.198.221
+          USER: ubuntu
+          DEPLOY_PATH: /var/www/emeifeng-serve
+          SERVICE_NAME: emeifeng-serve
+        run: |
+          # 获取所有生成的 JAR 文件
+          JAR_FILES=$(find . -name "*.jar" -not -path "*/target/original-*.jar")
+
+          # 将构建的 JAR 文件传输到服务器
+          for jar in $JAR_FILES; do
+            scp -o StrictHostKeyChecking=no $jar $USER@$HOST:$DEPLOY_PATH
+          done
+
+          # 连接到服务器并执行部署脚本
+          ssh -o StrictHostKeyChecking=no $USER@$HOST << 'EOF'
+            # 停止当前服务
+            sudo systemctl stop $SERVICE_NAME
+
+            # 替换旧的 JAR 文件
+            for jar in $DEPLOY_PATH/*.jar; do
+              mv $jar /var/www/emeifeng-serve/
+            done
+
+            # 启动服务
+            sudo systemctl start $SERVICE_NAME
+          EOF
