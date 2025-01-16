@@ -49,13 +49,14 @@ jobs:
           ssh -o StrictHostKeyChecking=no $USER@$HOST << 'EOF'
             # 停止当前服务
             sudo systemctl stop $SERVICE_NAME
+          
+            # 删除旧服务文件
+            sudo rm -rf $DEPLOY_PATH/*.jar
 
             # 移动 JAR 文件到目标目录并重命名
-            sudo mv $TEMP_PATH/*.jar $DEPLOY_PATH/emeifeng-serve.jar
+            sudo mv $TEMP_PATH/*.jar $DEPLOY_PATH/
 
             # 启动服务
             sudo systemctl start $SERVICE_NAME
 
-            # 清理临时目录
-            rm -rf $TEMP_PATH
           EOF
