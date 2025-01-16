@@ -31,26 +31,31 @@ jobs:
           HOST: 81.70.198.221
           USER: ubuntu
           DEPLOY_PATH: /var/www/emeifeng-serve
+          TEMP_PATH: /home/ubuntu/temp
           SERVICE_NAME: emeifeng-serve
-        run: |
-          # 获取所有生成的 JAR 文件
-          JAR_FILES=$(find . -name "*.jar" -not -path "*/target/original-*.jar")
-
-          # 将构建的 JAR 文件传输到服务器
-          for jar in $JAR_FILES; do
-            scp -o StrictHostKeyChecking=no $jar $USER@$HOST:$DEPLOY_PATH
-          done
-
-          # 连接到服务器并执行部署脚本
-          ssh -o StrictHostKeyChecking=no $USER@$HOST << 'EOF'
-            # 停止当前服务
-            sudo systemctl stop $SERVICE_NAME
-
-            # 替换旧的 JAR 文件
-            for jar in $DEPLOY_PATH/*.jar; do
-              mv $jar /var/www/emeifeng-serve/
+          run: |
+            # 创建临时目录
+            ssh -o StrictHostKeyChecking=no $USER@$HOST "mkdir -p $TEMP_PATH"
+            
+            # 获取所有生成的 JAR 文件
+            JAR_FILES=$(find . -name "*.jar" -not -path "*/target/original-*.jar")
+            
+            # 将构建的 JAR 文件传输到临时目录
+            for jar in $JAR_FILES; do
+              scp -o StrictHostKeyChecking=no $jar $USER@$HOST:$TEMP_PATH
             done
-
-            # 启动服务
-            sudo systemctl start $SERVICE_NAME
-          EOF
+            
+            # 连接到服务器并执行部署脚本
+            ssh -o StrictHostKeyChecking=no $USER@$HOST << 'EOF'
+              # 停止当前服务
+              sudo systemctl stop $SERVICE_NAME
+            
+              # 移动 JAR 文件到目标目录并重命名
+              sudo mv $TEMP_PATH/*.jar $DEPLOY_PATH/emeifeng-serve.jar
+            
+              # 启动服务
+              sudo systemctl start $SERVICE_NAME
+            
+              # 清理临时目录
+              rm -rf $TEMP_PATH
+            EOF
