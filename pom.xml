@@ -96,6 +96,15 @@
                         <mainClass>org.emeifeng.emeifengservewebstarter.EmeifengServeWebStarterApplication</mainClass> <!-- 指定主类 -->
                     </configuration>
                 </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <version>3.8.1</version> <!-- 确保使用较新的插件版本 -->
+                    <configuration>
+                        <source>17</source>
+                        <target>17</target>
+                    </configuration>
+                </plugin>
             </plugins>
 
         </pluginManagement>
