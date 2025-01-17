@@ -19,7 +19,10 @@ jobs:
           java-version: '17'  # 根据项目需要选择 Java 版本
 
       - name: Build with Maven
-        run: mvn clean package
+        run: mvn clean package spring-boot:repackage
+
+      - name: List target directory
+        run: ls -l target
 
       - name: Set up SSH
         uses: webfactory/ssh-agent@v0.5.3
@@ -34,37 +37,27 @@ jobs:
           DEPLOY_PATH: /var/www/emeifeng-serve
           SERVICE_NAME: emeifeng-serve
         run: |
-          # 确保临时目录存在
+          echo "Creating temporary directory on server..."
           ssh -o StrictHostKeyChecking=no $USER@$HOST "mkdir -p $TEMP_PATH"
 
-          # 获取所有生成的 JAR 文件
+          echo "Finding JAR files..."
           JAR_FILES=$(find target -name "*.jar" -not -path "*/target/original-*.jar")
 
-          # 检查 JAR 文件是否存在
           if [ -z "$JAR_FILES" ]; then
             echo "Error: No JAR files found"
             exit 1
           fi
 
-          # 将构建的 JAR 文件传输到临时目录
+          echo "Transferring JAR files..."
           for jar in $JAR_FILES; do
-            scp -o StrictHostKeyChecking=no $jar $USER@$HOST:$TEMP_PATH
+            scp -o StrictHostKeyChecking=no $jar $USER@$HOST:$TEMP_PATH || { echo "SCP failed"; exit 1; }
           done
 
-          # 连接到服务器并执行部署脚本
+          echo "Deploying on server..."
           ssh -o StrictHostKeyChecking=no $USER@$HOST << EOF
-            # 停止当前服务
-            sudo systemctl stop $SERVICE_NAME
-          
-            # 删除旧服务文件
-            sudo rm -rf $DEPLOY_PATH/*.jar
-
-            # 移动 JAR 文件到目标目录
-            sudo mv $TEMP_PATH/*.jar $DEPLOY_PATH/
-
-            # 启动服务
-            sudo systemctl start $SERVICE_NAME
-
-            # 清理临时目录
+            sudo systemctl stop $SERVICE_NAME || { echo "Failed to stop service"; exit 1; }
+            sudo rm -rf $DEPLOY_PATH/*.jar || { echo "Failed to remove old JARs"; exit 1; }
+            sudo mv $TEMP_PATH/*.jar $DEPLOY_PATH/ || { echo "Failed to move new JARs"; exit 1; }
+            sudo systemctl start $SERVICE_NAME || { echo "Failed to start service"; exit 1; }
             rm -rf $TEMP_PATH
           EOF
