@@ -85,17 +85,19 @@
                     <groupId>org.springframework.boot</groupId>
                     <artifactId>spring-boot-maven-plugin</artifactId>
                     <version>${spring-boot.version}</version>
-                </plugin>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-compiler-plugin</artifactId>
-                    <version>3.8.1</version> <!-- 使用较新的插件版本 -->
+                    <executions>
+                        <execution>
+                            <goals>
+                                <goal>repackage</goal> <!-- 配置 repackage 目标 -->
+                            </goals>
+                        </execution>
+                    </executions>
                     <configuration>
-                        <source>17</source>
-                        <target>17</target>
+                        <mainClass>org.emeifeng.emeifengservewebstarter.EmeifengServeWebStarterApplication</mainClass> <!-- 指定主类 -->
                     </configuration>
                 </plugin>
             </plugins>
+
         </pluginManagement>
     </build>
 </project>

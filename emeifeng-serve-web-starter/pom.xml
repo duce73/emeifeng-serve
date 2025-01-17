@@ -37,16 +37,15 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-jar-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>repackage</goal> <!-- 配置 repackage 目标 -->
+                        </goals>
+                    </execution>
+                </executions>
                 <configuration>
-                    <archive>
-                        <manifest>
-                            <mainClass>org.emeifeng.emeifengservewebstarter.EmeifengServeWebStarterApplication</mainClass> <!-- 替换为你的主类 -->
-                        </manifest>
-                    </archive>
+                    <mainClass>org.emeifeng.emeifengservewebstarter.EmeifengServeWebStarterApplication</mainClass> <!-- 指定主类 -->
                 </configuration>
             </plugin>
         </plugins>
