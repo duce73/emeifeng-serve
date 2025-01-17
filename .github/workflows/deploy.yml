@@ -19,10 +19,14 @@ jobs:
           java-version: '17'  # 根据项目需要选择 Java 版本
 
       - name: Build with Maven
-        run: mvn clean package spring-boot:repackage
+        run: mvn clean package
 
-      - name: List target directory
-        run: ls -l target
+      - name: List target directories
+        run: |
+          ls -l
+          ls -l emeifeng-serve-web-starter/target
+          ls -l emeifeng-serve-web-service/target
+          ls -l emeifeng-serve-web-infrastructure/target
 
       - name: Set up SSH
         uses: webfactory/ssh-agent@v0.5.3
@@ -41,16 +45,21 @@ jobs:
           ssh -o StrictHostKeyChecking=no $USER@$HOST "mkdir -p $TEMP_PATH"
 
           echo "Finding JAR files..."
-          JAR_FILES=$(find target -name "*.jar" -not -path "*/target/original-*.jar")
+          JAR_FILES=(
+            "emeifeng-serve-web-starter/target/*.jar"
+            "emeifeng-serve-web-service/target/*.jar"
+            "emeifeng-serve-web-infrastructure/target/*.jar"
+          )
 
-          if [ -z "$JAR_FILES" ]; then
-            echo "Error: No JAR files found"
-            exit 1
-          fi
+          for JAR_FILE_PATTERN in "${JAR_FILES[@]}"; do
+            JAR_FILE=$(echo $JAR_FILE_PATTERN)
+            if [ ! -f $JAR_FILE ]; then
+              echo "Error: JAR file matching pattern $JAR_FILE_PATTERN not found"
+              exit 1
+            fi
 
-          echo "Transferring JAR files..."
-          for jar in $JAR_FILES; do
-            scp -o StrictHostKeyChecking=no $jar $USER@$HOST:$TEMP_PATH || { echo "SCP failed"; exit 1; }
+            echo "Transferring JAR file $JAR_FILE..."
+            scp -o StrictHostKeyChecking=no $JAR_FILE $USER@$HOST:$TEMP_PATH || { echo "SCP failed for $JAR_FILE"; exit 1; }
           done
 
           echo "Deploying on server..."
